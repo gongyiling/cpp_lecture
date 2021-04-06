@@ -1,0 +1,26 @@
+syntax = "proto2";
+
+message RoleBasic
+{
+	optional int32 gold = 1;
+}
+
+message Factory
+{
+	optional int32 id = 1;
+	optional uint32 cd = 2;
+}
+
+message FactoryList
+{
+	repeated Factory factory_list = 1;
+}
+
+message Role
+{
+	optional RoleBasic role_basic = 1;
+	optional FactoryList factory_list = 2[lazy = true];
+	// dress
+	// skin
+}
+
