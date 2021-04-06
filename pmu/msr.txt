@@ -1,0 +1,10 @@
+RDPMC							1715
+C1H		IA32_PMC0				4567
+186H	IA32_PERFEVTSEL0		4571
+
+309H	IA32_FIXED_CTR0			4633	instructions, core cycles, reference cycles.
+38DH	IA32_FIXED_CTR_CTRL		4584
+38FH	IA32_PERF_GLOBAL_CTRL	4586
+
+Pre-defined Architectural Performance Events	3475
+
