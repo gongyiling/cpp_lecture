@@ -1,1 +1,0 @@
-cmd_/home/fractal/lecture/pmu/cr4.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/fractal/lecture/pmu/cr4.ko /home/fractal/lecture/pmu/cr4.o /home/fractal/lecture/pmu/cr4.mod.o
