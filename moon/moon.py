@@ -64,20 +64,19 @@ class Projection:
 class Object:
 	def __init__(self):
 		self.nodes = np.zeros((0, 4))
+		self.text_surfaces = []
 		
 	def addNodes(self, node_array):
 		ones_column = np.ones((len(node_array), 1))
 		ones_added = np.hstack((node_array, ones_column))
 		self.nodes = np.vstack((self.nodes, ones_added))
-		self.text_surfaces = []
 
 	def findCenter(self):
 		return self.nodes.mean(axis = 0)
 
 	def rotate(self, center, matrix):
-		for i, node in enumerate(self.nodes):
-			self.nodes[i] = center + np.matmul(matrix, node - center)
-			
+		nodes = self.nodes - center
+		self.nodes = center + np.transpose(np.dot(matrix, np.transpose(nodes)))
 
 running = True
 xyz = []
