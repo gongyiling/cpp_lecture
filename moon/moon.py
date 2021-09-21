@@ -30,23 +30,25 @@ class Projection:
 		self.width = width
 		self.height = height
 		self.screen = pg.display.set_mode((width, height))
-		self.background = (10, 10, 60)
+		self.background = (10, 60, 60)
 		pg.display.set_caption('Happy Mid Autumn Festival')
 		self.surfaces = {}
 
 	def addSurface(self, name, surface):
+		text_surfaces = []
+		for i, node in enumerate(surface.nodes):
+			text = ascii_chars[i]
+			text_surfaces.append(my_font.render(text, False, (255, 255, 255)))
+		surface.text_surfaces = text_surfaces
 		self.surfaces[name] = surface
 
 	def display(self):
 		self.screen.fill(self.background)
 		for surface in self.surfaces.values():
-			i = 0
-			for node in surface.nodes:
-				self.text = ascii_chars[i]
-				self.text_surface = my_font.render(self.text, False, (255, 255, 255))
+			for i, node in enumerate(surface.nodes):
+				text_surface = surface.text_surfaces[i] 
 				if node[1] > 0:
-					self.screen.blit(self.text_surface, ((WIDTH / 2) + int(node[0]), HEIGHT / 2 + int(node[2])))
-				i += 1
+					self.screen.blit(text_surface, ((WIDTH / 2) + int(node[0]), HEIGHT / 2 + int(node[2])))
 				
 	def rotateAll(self, theta):
 		for surface in self.surfaces.values():
@@ -67,6 +69,7 @@ class Object:
 		ones_column = np.ones((len(node_array), 1))
 		ones_added = np.hstack((node_array, ones_column))
 		self.nodes = np.vstack((self.nodes, ones_added))
+		self.text_surfaces = []
 
 	def findCenter(self):
 		return self.nodes.mean(axis = 0)
@@ -87,7 +90,6 @@ for i in range(MAP_HEIGHT + 1):
 		y = round(R * math.sin(lat) * math.sin(lon), 2)
 		z = round(R * math.cos(lat), 2)
 		xyz.append((x, y, z))
-
 
 pv = Projection(WIDTH, HEIGHT)
 moon = Object()
