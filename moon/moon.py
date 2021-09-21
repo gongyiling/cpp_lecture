@@ -1,6 +1,7 @@
 import pygame as pg
 import numpy as np
 import math
+import random
 
 clock = pg.time.Clock()
 FPS = 30
@@ -13,15 +14,21 @@ MAP_HEIGHT = 38
 
 pg.init()
 
-my_font = pg.font.SysFont('arial', 18)
+text_font = pg.font.SysFont('arial', 10)
+title_font = pg.font.SysFont('arial', 20)
+title = 'Happy Mid Autumn Festival'
+ascii_chars = []
+title_color = (255, 215, 0)
 
 with open('moon.txt') as f:
-	data = [f.read().replace('\n', '')]
-	
-ascii_chars = []
-for line in data:
-	for char in line:
-		ascii_chars.append(char)
+	lines = f.readlines()
+	for i, line in enumerate(lines):
+		line = line.strip()
+		for j, char in enumerate(line):
+			if j < len(title) and i == MAP_HEIGHT / 2:
+				ascii_chars.append((title[j], True))
+			else:
+				ascii_chars.append((char, False))
 
 ascii_chars.reverse()
 
@@ -31,14 +38,22 @@ class Projection:
 		self.height = height
 		self.screen = pg.display.set_mode((width, height))
 		self.background = (10, 60, 60)
-		pg.display.set_caption('Happy Mid Autumn Festival')
+		pg.display.set_caption(title)
 		self.surfaces = {}
 
 	def addSurface(self, name, surface):
 		text_surfaces = []
+		low = 250
+		high = 250
 		for i, node in enumerate(surface.nodes):
-			text = ascii_chars[i]
-			text_surfaces.append(my_font.render(text, False, (255, 255, 255)))
+			text = ascii_chars[i][0]
+			if ascii_chars[i][1]:
+				render_font = title_font
+				c = title_color
+			else:
+				render_font = text_font
+				c = (random.randint(low, high), random.randint(low, high), random.randint(low, high))
+			text_surfaces.append(render_font.render(text, False, c))
 		surface.text_surfaces = text_surfaces
 		self.surfaces[name] = surface
 
@@ -52,14 +67,13 @@ class Projection:
 				
 	def rotateAll(self, theta):
 		for surface in self.surfaces.values():
-			center = surface.findCenter()
 			c = np.cos(theta)
 			s = np.sin(theta) 
 			matrix = np.array([	[c, -s, 0, 0],
 								[s, c, 0, 0],
 								[0, 0, 1, 0],
 								[0, 0, 0, 1]])
-			surface.rotate(center, matrix)
+			surface.rotate(matrix)
 		
 class Object:
 	def __init__(self):
@@ -70,13 +84,14 @@ class Object:
 		ones_column = np.ones((len(node_array), 1))
 		ones_added = np.hstack((node_array, ones_column))
 		self.nodes = np.vstack((self.nodes, ones_added))
+		self.center = self.findCenter()
 
 	def findCenter(self):
 		return self.nodes.mean(axis = 0)
 
-	def rotate(self, center, matrix):
-		nodes = self.nodes - center
-		self.nodes = center + np.transpose(np.dot(matrix, np.transpose(nodes)))
+	def rotate(self, matrix):
+		nodes = self.nodes - self.center
+		self.nodes = self.center + np.transpose(np.dot(matrix, np.transpose(nodes)))
 
 running = True
 xyz = []
@@ -95,7 +110,7 @@ moon = Object()
 moon_nodes = [i for i in xyz]
 moon.addNodes(np.array(moon_nodes))
 pv.addSurface('moon', moon)
-spin = -0.02
+spin = 0.01
 
 while running:
 	clock.tick(FPS)
