@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <chrono>
+#include <sched.h>
 
 #define NOOP asm("nop");
 #define NOOP2 NOOP NOOP
@@ -20,9 +21,18 @@ __attribute__((noinline)) void foo(int r)
 	}
 }
 
+void bind_to_cpu(int index)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(index, &set);
+    sched_setaffinity(index, sizeof(set), &set);   
+}
+
 int main()
 {
-	const int N = 1024 * 1024 * 100;
+	bind_to_cpu(0);
+	const int N = 1024 * 1024 * 1000;
 	const int r = rand();
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < N; i++)
