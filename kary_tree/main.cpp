@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <queue>
 #include <chrono>
+#include <sched.h>
 
 struct node
 {
@@ -53,10 +54,19 @@ const int* find(const int* b, int index, int value)
 	return find<kary>(b, child_base_index, value);
 }
 
+void bind_to_cpu(int index)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(index, &set);
+    sched_setaffinity(index, sizeof(set), &set);   
+}
+
 int main()
 {
-	const int kary = 8;
-	// 4^10 - 1
+	bind_to_cpu(0);
+	const int kary = 1;
+	// 4^12 - 1
 	const int N = (1 << (2 * 12)) - 1;
 	std::vector<int> data, tree;
 	data.resize(N);
@@ -65,14 +75,30 @@ int main()
 	{
 		data[i] = i;
 	}
-	int* p = tree.data();
-	build_tree(data.data(), N, p, kary);
+	if (kary == 1)
+	{
+		tree = data;
+	}
+	else
+	{
+		int* p = tree.data();
+		build_tree(data.data(), N, p, kary);
+	}
 	std::random_shuffle(data.begin(), data.end());
 	int s = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < N; i++)
 	{
-		s += *find<kary>(tree.data(), 0, data[i]);
+		if (kary == 1)
+		{
+			int d = data[i];
+			s += *std::lower_bound(tree.begin(), tree.end(), d);
+		}
+		else
+		{
+			int d = data[i];
+			s += *find<kary>(tree.data(), 0, d);
+		}
 	}
 	auto end = std::chrono::high_resolution_clock::now();
 	int n = N;
