@@ -1,10 +1,12 @@
 #include <iostream>
 #include <chrono>
 #include <string.h>
+#include <sched.h>
 
 template <typename element_t, int N>
 struct matrix
 {
+	typedef element_t ele_t;
 	element_t ele[N][N];
 	inline int size() const
 	{
@@ -44,11 +46,6 @@ struct matrix
 	}
 };
 
-int get_index(int N, int i, int j)
-{
-	return j + i * N;
-}
-
 template <typename matrix_t>
 matrix_t operator*(const matrix_t& __restrict a, const matrix_t& __restrict b)
 {
@@ -58,11 +55,10 @@ matrix_t operator*(const matrix_t& __restrict a, const matrix_t& __restrict b)
 	{
 		for (int j = 0; j < N; j++)
 		{
-			const int ri = get_index(N, i, j);
-			r[ri] = 0;
+			r.ele[i][j] = 0.0f;
 			for (int k = 0; k < N; k++)
 			{
-				r[ri] += a[get_index(N, i, k)] * b[get_index(N, k, j)];	
+				r.ele[i][j] += a.ele[i][k] * b.ele[k][j];	
 			}
 		}
 	}
@@ -109,12 +105,21 @@ float test_mul(int N)
 	return sum_matrix(n);
 }
 
+void bind_to_cpu(int index)
+{
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    CPU_SET(index, &set);
+    sched_setaffinity(index, sizeof(set), &set);   
+}
+
 int main()
 {
 	typedef matrix<float, TILE_SIZE> tile_t;
 	typedef matrix<float, MATRIX_SIZE> normal_matrix_t;
 	typedef matrix<tile_t, MATRIX_SIZE / TILE_SIZE> block_matrix_t;
 
+	bind_to_cpu(0);
 	const int N = 10;
 	if (true)
 	{
@@ -123,10 +128,18 @@ int main()
 		auto end = std::chrono::high_resolution_clock::now();
 		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << '\t' << f << std::endl;
 	}
-	if (false)
+	if (true)
 	{
 		auto start = std::chrono::high_resolution_clock::now();
 		float f = test_mul<block_matrix_t>(N);
+		auto end = std::chrono::high_resolution_clock::now();
+		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << '\t' << f << std::endl;
+	}
+	if (true)
+	{
+		typedef matrix<matrix<tile_t, TILE_SIZE>, MATRIX_SIZE / (TILE_SIZE * TILE_SIZE)> block_block_matrix_t;
+		auto start = std::chrono::high_resolution_clock::now();
+		float f = test_mul<block_block_matrix_t>(N);
 		auto end = std::chrono::high_resolution_clock::now();
 		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << '\t' << f << std::endl;
 	}
