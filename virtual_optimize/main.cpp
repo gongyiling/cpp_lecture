@@ -52,11 +52,13 @@ int main()
 	const int N = 100000;
 	std::vector<A*> va;
 	va.reserve(M);
-	for (int i = 0; i < M; i++)
+	for (int i = 0; i < M - 1; i++)
 	{
 		va.push_back(new A());
 		va.back()->init();
 	}
+	va.push_back(new A());
+	va.back()->init();
 	auto start = std::chrono::high_resolution_clock::now();	
 	for (int i = 0; i < N; i++)
 	{
@@ -67,7 +69,7 @@ int main()
 		}
 	}
 	auto end = std::chrono::high_resolution_clock::now();	
-	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;	
+	std::cout << count << '\t'<<  std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;	
 	return 0;
 }
 
