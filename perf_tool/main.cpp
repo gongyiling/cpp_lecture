@@ -1,6 +1,5 @@
 #include <asm/perf_regs.h>
 #include <asm/unistd.h>
-#include <execinfo.h>
 #include <fcntl.h>
 #include <linux/perf_event.h>
 #include <signal.h>
@@ -12,6 +11,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <chrono>
+#include <assert.h>
 
 #define barrier() __asm__ __volatile__("" : : : "memory")
 
@@ -31,7 +34,7 @@ static uint64_t perf_mmap_size()
   return ((1U << PERF_BUFF_SIZE_SHIFT) + 1) * get_page_size();
 }
 
-struct perf_record_stack
+struct perf_record_time
 {
   struct perf_event_header header;
   uint64_t time;
@@ -60,7 +63,7 @@ static void read_perf_data()
   const uint64_t page_size = g_perf_data.data_offset;
   uint8_t * perf_data = g_perf_data.perf_data;
   uint64_t perf_data_length = g_perf_data.perf_data_length;
-
+  auto time = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   barrier();
   const uint8_t *base = reinterpret_cast<const uint8_t *>(page) + page_size;
 
@@ -71,6 +74,7 @@ static void read_perf_data()
     if (e->type == PERF_RECORD_SAMPLE && perf_data_length + e->size <= PERF_MMAP_DATA_SIZE)
     {
       const uint8_t *end = base + (tail + e->size) % buffer_size;
+      perf_record_time* record = (perf_record_time*)(perf_data + perf_data_length);
       if (end < begin)
       {
         // perf event wraps around the ring, make a contiguous copy
@@ -88,12 +92,14 @@ static void read_perf_data()
         memcpy(perf_data + perf_data_length, base, e->size);
         perf_data_length += e->size;
       }
+      record->time = time;
     }
     tail += e->size;
   }
 
   barrier();
   page->data_tail = tail;
+  g_perf_data.perf_data_length = perf_data_length;
 }
 
 static void perf_event_handler(int signum, siginfo_t *info, void *ucontext)
@@ -106,7 +112,15 @@ static void perf_event_handler(int signum, siginfo_t *info, void *ucontext)
 
 void worker()
 {
-
+  auto start = std::chrono::high_resolution_clock::now();
+  int s = 0;
+  for (int i = 0; i < 100000000; i++)
+  {
+    s += rand();
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  printf("s: %d, elapsed milliseconds: %ld\n", s, elapsed);
 }
 
 int main()
@@ -120,20 +134,24 @@ int main()
   memset(&sa, 0, sizeof(struct sigaction));
   sa.sa_sigaction = perf_event_handler;
   sa.sa_flags = SA_SIGINFO;
-  sigaction(SIGIO, &sa, NULL);
+  int ret = sigaction(SIGIO, &sa, NULL);
+  assert(ret != -1);
 
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
   attr.type = PERF_TYPE_HARDWARE;
   attr.sample_type = PERF_SAMPLE_TIME;
   attr.size = sizeof(attr);
-  attr.config = PERF_COUNT_HW_REF_CPU_CYCLES;
-  attr.sample_period = 100000;
+  attr.config = PERF_COUNT_HW_CPU_CYCLES;
+  //attr.config = PERF_COUNT_HW_INSTRUCTIONS;
+  attr.sample_period = 10000000ULL;
   attr.exclude_kernel = 1;
   attr.exclude_hv = 1;
   attr.disabled = 1;
 
   int fd = perf_event_open(&attr, 0, -1, -1, 0);
+  assert(fd !=0);
+
   g_perf_data.fd = fd;
   fcntl(fd, F_SETFL, O_RDWR | O_NONBLOCK | O_ASYNC);
   fcntl(fd, F_SETSIG, SIGIO);
@@ -141,21 +159,34 @@ int main()
 
   const size_t pages_size = perf_mmap_size();
   void *page = mmap(NULL, pages_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  assert(page != MAP_FAILED);
 
   g_perf_data.pages_size = pages_size;
   g_perf_data.page = reinterpret_cast<perf_event_mmap_page *>(page);
   g_perf_data.data_offset = get_page_size();
   g_perf_data.data_size = pages_size - g_perf_data.data_offset;
 
-  void *perf_data =  mmap(NULL, pages_size, 
+  void *perf_data =  mmap(NULL, PERF_MMAP_DATA_SIZE, 
     PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_POPULATE, -1, 0);
+  assert(perf_data != MAP_FAILED);
+
   g_perf_data.perf_data = (uint8_t*)perf_data;
   g_perf_data.perf_data_length = 0;
 
+  uint64_t time = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   ioctl(fd, PERF_EVENT_IOC_ENABLE);
   worker();
   ioctl(fd, PERF_EVENT_IOC_DISABLE);
 
-
+  const perf_record_time* r = (const perf_record_time*)g_perf_data.perf_data;
+  const perf_record_time* e = (const perf_record_time*)(g_perf_data.perf_data + g_perf_data.perf_data_length);
+  
+  int sample_count = 0;
+  for (; r < e; r++)
+  {
+    printf("%d, %ld\n", r->header.size, (r->time - time) / (1000 * 1000));
+    sample_count++;
+  }
+  printf("sample_count=%d\n", sample_count);
   return 0;
 }
