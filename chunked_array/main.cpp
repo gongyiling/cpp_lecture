@@ -41,7 +41,7 @@ public:
 
 int main()
 {
-	chunked_array<int, 1023> ca;
+	chunked_array<int, 1024> ca;
 	const int N = 1024 * 1024;
 	ca.resize(N);
 

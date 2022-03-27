@@ -142,8 +142,8 @@ int main()
   attr.type = PERF_TYPE_HARDWARE;
   attr.sample_type = PERF_SAMPLE_TIME;
   attr.size = sizeof(attr);
-  attr.config = PERF_COUNT_HW_CPU_CYCLES;
-  //attr.config = PERF_COUNT_HW_INSTRUCTIONS;
+  //attr.config = PERF_COUNT_HW_CPU_CYCLES;
+  attr.config = PERF_COUNT_HW_INSTRUCTIONS;
   attr.sample_period = 10000000ULL;
   attr.exclude_kernel = 1;
   attr.exclude_hv = 1;
@@ -190,3 +190,4 @@ int main()
   printf("sample_count=%d\n", sample_count);
   return 0;
 }
+

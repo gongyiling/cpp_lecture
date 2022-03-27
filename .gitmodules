@@ -1,0 +1,3 @@
+[submodule "simd_soa/soa"]
+	path = simd_soa/soa
+	url = https://github.com/gongyiling/soa.git
