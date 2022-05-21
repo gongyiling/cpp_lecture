@@ -50,7 +50,6 @@ int main()
 	{
 		keys[i] = rand() % (2 * N);
 	}
-	int sum = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < 10000000; i++)
 	{
@@ -62,7 +61,7 @@ int main()
 	}
 	auto end = std::chrono::high_resolution_clock::now();
 	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	printf("sum=%d, elapsed %ld milliseconds\n", sum, elapsed);
+	printf("elapsed %ld milliseconds\n", elapsed);
 	return 0;
 }
 
