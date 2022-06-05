@@ -8,9 +8,9 @@
 struct data
 {
 	int32_t d;
-	char padding[64 - sizeof(d)];
+	char padding[64 - sizeof(int32_t)];
 	int32_t d1;
-	char padding2[64 - sizeof(d1)];
+	char padding2[64 - sizeof(int32_t)];
 };
 
 void bind_to_cpu(int index)
