@@ -18,10 +18,6 @@ struct data
 	data_cold* cold;
 };
 
-static std::array<data*, 1014 * 1024> datas;
-static std::array<data, 1014 * 1024> data_pool;
-static std::array<data_cold, 1014 * 1024> data_cold_pool;
-
 void bind_to_cpu(int index)
 {
     cpu_set_t set;
@@ -29,6 +25,10 @@ void bind_to_cpu(int index)
     CPU_SET(index, &set);
     sched_setaffinity(index, sizeof(set), &set);
 }
+
+static std::array<data*, 1014 * 1024> datas;
+static std::array<data, 1014 * 1024> data_pool;
+static std::array<data_cold, 1014 * 1024> data_cold_pool;
 
 int main()
 {

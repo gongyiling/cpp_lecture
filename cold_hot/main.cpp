@@ -13,8 +13,6 @@ struct data
 	char padding2[64 - sizeof(d1)];
 };
 
-static std::array<data*, 1014 * 1024> datas;
-
 void bind_to_cpu(int index)
 {
     cpu_set_t set;
@@ -22,6 +20,8 @@ void bind_to_cpu(int index)
     CPU_SET(index, &set);
     sched_setaffinity(index, sizeof(set), &set);
 }
+
+static std::array<data*, 1014 * 1024> datas;
 
 int main()
 {
