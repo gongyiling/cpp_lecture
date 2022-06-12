@@ -10,14 +10,14 @@
 #include <cmath>
 
 template <bool remove_duplicated>
-std::vector<int32_t> gen_random_data(int32_t N)
+std::vector<int64_t> gen_random_data(int32_t N)
 {
-	std::vector<int32_t> data;
+	std::vector<int64_t> data;
 	data.reserve(N);
-	std::unordered_set<int32_t> numbers;
+	std::unordered_set<int64_t> numbers;
 	for (int32_t i = 0; i < N; i++)
 	{
-		int32_t r = rand();
+		int64_t r = ((int64_t)rand() << 32) | rand();
 		if (remove_duplicated)
 		{
 			if (numbers.insert(r).second)
@@ -39,20 +39,20 @@ static void test_find_success()
 	{
 		const int32_t N = std::pow(3, i);
 		std::cout << "N = " << N << std::endl;
-		std::vector<int32_t> data = gen_random_data<false>(N);
+		std::vector<int64_t> data = gen_random_data<true>(N);
 		{
 			std::unordered_map<int64_t, int64_t> m;
-			for (int32_t i : data)
+			for (int64_t i : data)
 			{
 				m.emplace(i, i);
 			}
-			std::vector<int32_t> shuffled_data = data;
+			std::vector<int64_t> shuffled_data = data;
 			std::random_shuffle(shuffled_data.begin(), shuffled_data.end());
 			int64_t sum = 0;
 			auto start = std::chrono::high_resolution_clock::now();
 			for (int32_t i = 0; i < 100000000 / N; i++)
 			{
-				for (int32_t i : shuffled_data)
+				for (int64_t i : shuffled_data)
 				{
 					sum += m.find(i)->second;
 				}
@@ -63,17 +63,17 @@ static void test_find_success()
 		}
 		{
 			absl::flat_hash_map<int64_t, int64_t> m;
-			for (int32_t i : data)
+			for (int64_t i : data)
 			{
 				m.emplace(i, i);
 			}
-			std::vector<int32_t> shuffled_data = data;
+			std::vector<int64_t> shuffled_data = data;
 			std::random_shuffle(shuffled_data.begin(), shuffled_data.end());
 			int64_t sum = 0;
 			auto start = std::chrono::high_resolution_clock::now();
 			for (int32_t i = 0; i < 100000000 / N; i++)
 			{
-				for (int32_t i : shuffled_data)
+				for (int64_t i : shuffled_data)
 				{
 					sum += m.find(i)->second;
 				}
@@ -84,17 +84,17 @@ static void test_find_success()
 		}
 		{
 			fhash_table<int64_t, int64_t> m;
-			for (int32_t i : data)
+			for (int64_t i : data)
 			{
 				m.insert(i, i);
 			}
-			std::vector<int32_t> shuffled_data = data;
+			std::vector<int64_t> shuffled_data = data;
 			std::random_shuffle(shuffled_data.begin(), shuffled_data.end());
 			auto start = std::chrono::high_resolution_clock::now();
 			int64_t sum = 0;
 			for (int32_t i = 0; i < 100000000 / N; i++)
 			{
-				for (int32_t i : shuffled_data)
+				for (int64_t i : shuffled_data)
 				{
 					sum += *m.find(i);
 				}
